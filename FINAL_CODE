@@ -1,0 +1,490 @@
+/* 
+ * File:   main.cpp
+ * Author: Wyatt Curtner
+ * Last Updated on: May 13th, 9:03 PM
+ * Purpose: Final Version of my Project 1
+ */
+//System Libraries
+#include <iostream>  //Input/Output Library
+#include <cstdlib> // Random Number Generation
+#include <ctime> // Time Clock Manipulation
+#include <iomanip> //Input Output Formatting
+#include <string> // String Library 
+#include <cmath> // Math Libary
+#include <fstream> // File Library 
+#include <vector>
+using namespace std;
+
+//User Libraries
+
+//Global Constants, no Global Variables are allowed
+
+//Math/Physics/Conversions/Higher Dimensions - i.e. PI, e, etc...
+const int PRCNT = 100; // Percentage conversion, constant 
+
+
+//Function Prototypes
+bool PlyAgn (int, int WNY, int WNN, int Ntms);
+bool Valid(bool, int& WNY, int& WNN, int& Ntms); 
+void text (int);
+void text (string);
+void rating (char);
+string RbMode (int[],int);
+void prntVctr(vector <string> winners, int NumRnds);
+void fillTbl(char [][5],int, int, int);
+void prntTbl(char [][5],int);
+void prntRlls(vector <int> land, int );
+bool linSrch(vector <int> land,int , int& );
+void swap1(int &,int &);
+void bubSort( vector <int>& land ,int);
+void selSort( vector <int>& land, int);
+//Execution Begins Here!
+
+
+int main(int argc, char** argv) {
+
+    
+//Set Random Number Seed
+srand(static_cast<unsigned int>(time(0))); // seed for randoms 
+
+//Declare Variables
+vector<string> victors; 
+vector<int> land;
+string P1Nm, RbNm; //Player 1  + Robot name 
+string mode; 
+string winner; // winner is: 
+int turn; //the number of turns taken by p1
+int robot; // robot player plays against 
+int rINDX; // random number 0-2
+int SIZE=3; //size of robot score arrays
+int indx; // index
+int diff; // difficult rating 
+int result; //Result of turn 
+int NumRnds; //number of rounds 
+int Ntms, WNY, WNN; //Number of times p1 presses y or Y 
+float YesP, NoP; //Yes percentage + No percentage 
+float  FWNY, FWNN; //Float value of WNY + WNN
+bool WinYt; //Has p1 won yet?
+bool canRl, iswmp; // cancel roll? 
+bool cancel; // cancel trnTl?
+bool Rply; // replay?
+bool rlagn; // roll again? 
+char sel='d';// d for default 
+int brave; // Numeric Recording of Bravery value 
+int die; // stores die, later randomized as [1-6]
+int potent; // potential to add if roll != 1
+int NowScr; // score now equals 
+int trnTl; //total accumulated on this turn
+unsigned char again; // players choice to roll again
+const int MD=3;
+const int BRV=5;
+
+int arr1[SIZE]={2,3,4};
+int arr2[SIZE]={3,4,5};
+int arr3[SIZE]={4,5,6};
+
+
+char chart [MD][BRV];
+//Initialize Variables
+NumRnds=0; 
+
+//Initialize Variables (Text Lines)
+string Rls1="PIGGY!!! That sucks...next player's turn.";//If player rolls 1
+string RlsNO="You're safe for now...add to turn total: ";//If player does not roll 1
+string QAg="Wanna go again..?, press y or n."; //Question prompting again
+string EnNm="Enter Player 1's Name: "; //Enter Name Prompt
+string RbTxt="You are playing against a "; //Robot prompt
+//Introduce Game + Explain Rules & Prompts
+
+ifstream f("instructions.txt"); // program gets instructions from file "instructions.txt"
+
+if (f.is_open()) // opens ifstream we created
+    cout << f.rdbuf(); // output stream + stream buffer
+
+f.close(); // closes ifstream 
+
+//Enter player name
+cout<<EnNm; // output entered name line
+getline (cin,P1Nm); // input player name 
+cout<<endl; // output end line
+RbNm= (P1Nm=="Robot")? "Droid" : "Robot"; // RbNm = Droid if P1Nm= Robot, else = Robot 
+cout<<RbTxt<<RbNm<<endl;  // output robot text line 
+
+    cout<<"Chose difficulty rating"<<endl;
+    cout<<"Press A for easy....."<<endl;
+    cout<<"Press B for medium..."<<endl;
+    cout<<"Press C for hard....."<<endl;
+    do{ //Input Validation for Re-Roll Choice
+
+                cin>>sel; // input choice for again 
+                if      ((sel=='A')||(sel=='a')){
+                cout<<RbNm<<" set to easy."<<endl;
+                diff=1; 
+                } 
+                else if ((sel=='B')||(sel=='b')){
+                cout<<RbNm<<" set to medium."<<endl;
+                diff=2;
+                } 
+                else if ((sel=='C')||(sel=='c')){
+                cout<<RbNm<<" set to hard"<<endl;
+                diff=3;
+                }
+                
+              
+            }while ((sel!='A')&&(sel!='a')&&(sel!='B')&&(sel!='b')&&(sel!='C')&&(sel!='c'));                                                     
+            cout<<endl;       
+do{
+   
+brave=0; // initialize bravery rating to 0
+NowScr=0; // initialize starting score to 0
+robot=0; // initialize robot's score to 0
+turn=0; // initialize turn to 0
+
+Ntms=WNY=WNN=0; //initialize number of times winner pressed anything, yes, and no to 0
+WinYt=false; // initialize player's winning or not to false
+potent=0; // initialize potential per turn to 0 (repeat in loop)
+trnTl=0; // initialize turn's collective score to 0
+cancel=false; // initialize cancel re-roll to 0
+iswmp=false; 
+again='D'; // initialize again input to 'D' for default 
+    
+    
+    NumRnds++; 
+    cout<<"Now Playing Round: "<<NumRnds<<endl; 
+
+do{ // do everything inside as long as: 
+
+    cout<<"You are about to roll..."<<endl; // output statement for enter do while 
+    trnTl=0; 
+    do{ // Will Keep Rolling Die as long as: Roll has not been cancelled & re-roll input is yes
+    cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl; 
+        //Roll Die 
+
+            cout<<"Rolling..."<<endl; // output statement
+            turn++; 
+            die=(rand()%6)+1; // roll [1-6]
+            cout<<"You landed a :"<<die<<endl; // output statement + result
+            land.push_back(die);
+            cout<<endl; // output end line
+
+        //is die 1 or not 1
+        if (die==1){ //you rolled a 1
+            
+            trnTl=0; //turn progress resets 
+            canRl=false; //cannot roll again
+            cout<<Rls1<<endl; // text line
+            cancel=true; //cancel the addition of trnTl
+        } //leave conditions for die = 1 
+
+        else if (die!=1){ // you did not roll a 1 [2-6]
+
+            trnTl+=die; //add roll to total for turn
+            canRl=true; //can roll again
+            cout<<RlsNO<<die<<endl; // text line
+            cancel=false; // do not cancel the addition of trnTl
+            cout<<"Currently you have accumulated: "<<trnTl<<endl; // output statement + turn's total + end line
+            cout<<"Before this turn you had: "<<NowScr<<endl; // output statement + player's score + end line
+            potent=(NowScr+trnTl); //potential is added to p1's score     
+        } // leave conditions for die != 1
+
+            cout<<"Now you Have: "<<potent<<endl; //potential amount if 1 does not get rolled 
+            cout<<endl; 
+
+        if ((canRl==true)&&(potent<100)){ //Can player re-roll? + cut off re-roll at 100 
+            // Prompt ReRoll
+            cout<<QAg<<endl; //Text line prompting choice
+
+            rlagn=Valid(true, WNY, WNN, Ntms); 
+            //Passed Validation
+            if (Ntms>10){cout<<"wow you're lucky"<<endl;}
+            else {cout<<"normal luck"<<endl;}
+
+            //successfully passed input validation   
+        }//re-roll choice allowed and confirmed   
+      
+        
+        } while ((rlagn==true)&&(canRl!=false)&&(potent<=100)); //continue as long as again is yes and roll hasn't been canceled
+
+
+
+        NowScr+=trnTl; // Player's score collects value of turn total 
+        
+        cout<<"************************************************"<<endl; //output statement + end line 
+        cout<<"Robot adds to total"<<endl; // output statement + end line 
+        rINDX=rand() % 3;
+        switch(diff){
+            case 1:
+            robot+=arr1[rINDX];
+            mode=RbMode(arr1,SIZE);
+            cout<<RbNm<<" on "<<mode<<" mode."<<endl; 
+            break;
+            
+            case 2:
+            robot+=arr2[rINDX];
+             mode=RbMode(arr2,SIZE);
+            cout<<RbNm<<" on "<<mode<<" mode."<<endl; 
+            break;
+            
+            case 3:
+            robot+=arr3[rINDX];
+             mode=RbMode(arr3,SIZE);
+            cout<<RbNm<<" on "<<mode<<" mode."<<endl;  
+            break;           
+        }      
+       
+        cout<<"Robot's score is at: "<<robot<<endl; 
+        
+        //Game Over? 
+        if (NowScr>=100){
+           WinYt=true;
+        } // if the score reaches 100 WinYt=true; 
+}while(WinYt==false && robot<100 ); // as long as WinYt equals false and robot has not reached 100
+
+//Game Over
+FWNY=WNY; // Mix data types for float calculations
+FWNN=WNN; 
+YesP=((FWNY/Ntms)*PRCNT); // Percentages of times player said yes equals the number of times they pressed yes
+//divided by the number of times they said anything, times 100 
+NoP=((FWNN/Ntms)*PRCNT); // Percentages of times player said no equals the number of times they pressed no
+//divided by the number of times they said anything, times 100 
+cout<<fixed<<setprecision(2)<<showpoint; //output formatting  
+
+switch (WinYt){ // switch these cases based on the value of WinYt
+    case false:winner=RbNm;break; // in the case that WinYt is false winner is "Robot"
+    case true: winner=P1Nm;break;  // in the case that WinYt is true winner is whatever is entered in P1Nm
+}
+
+cout<<endl; 
+cout<<"Game Finished!"<<endl; // output statement + end line 
+text(winner); 
+victors.push_back(winner);
+cout<<P1Nm<<" played for "<<turn<<" turns."<<endl; // output winner + statement + turn + statement + end line
+cout<<P1Nm<<" said yes to re-roll "<<WNY<<" times."<<endl; // output winner + statement + WNY + statement + end line
+cout<<"and no to re-roll "<<WNN<<" times."<<endl; // output statement + WNN + statement + end line 
+cout<<"that makes "<<Ntms<<" times total."<<endl;  // output statement + Ntms + statement + end line 
+cout<<"That means you said yes: "<<YesP<<"% of the time."<<endl; // output statement + YesP + statement + end line 
+cout<<"and no: "<<NoP<<"% of the time."<<endl; // output statement + NoP + statement + end line 
+
+cout<<endl;
+cout<<"Rolls you got, are as follows: "<<endl; 
+prntRlls(land, turn);
+cout<<endl;
+ 
+if(linSrch(land,turn,indx)==true){
+        cout<<"Value of 1 was found at indx = "<<indx<<endl;
+        cout<<"That means you were a piggy at least once..."<<endl; 
+    }
+cout<<endl; 
+
+if (RbNm=="Robot"){
+ selSort(land,turn);
+ cout<<endl;
+}
+
+if (RbNm=="Droid"){
+bubSort(land,turn);
+cout<<endl; 
+}
+
+cout<<"Your rolls sorted:"<<endl; 
+
+prntRlls(land, turn);
+
+
+
+if((YesP>=50.00)&&(YesP<60.00)){brave=1;} // if the percentage of times player pressed yes is above:50-60 bravery rating is:1
+if((YesP>=60.00)&&(YesP<70.00)){brave=2;} // if the percentage of times player pressed yes is above:60-70 bravery rating is:2
+if((YesP>=70.00)&&(YesP<80.00)){brave=3;} // if the percentage of times player pressed yes is above:70-80 bravery rating is:3
+if((YesP>=80.00)&&(YesP<90.00)){brave=4;} // if the percentage of times player pressed yes is above:80-90 bravery rating is:4
+if(YesP>=90.00)                {brave=5;} // if the percentage of times player pressed yes is above:90    bravery rating is:5
+text(brave);
+
+cout<<"bravery Rating: ";// output statement
+for (int i = 0; i < (brave) ; i++){ //output "*", as many times as the value of brave 
+    cout<<"*";// output "*"
+}
+cout<<endl; // output end line 
+cout<<"        out of: *****"<<endl; // output statement + end line 
+cout<<"because you said yes around "; // output statement
+cout<<floor(YesP)<<"% of the time."<<endl; // output rounded down value of YesP + statement + end line
+while((YesP<50.00) && (iswmp==false)){
+    cout<<"whimp..."<<endl;
+    iswmp=true;
+}
+//Store Winner Name in main.cpp 
+ofstream recwin; // record wins here 
+recwin.open("scores.txt", ios::app); // open scores.txt save our changes and leave them each run
+recwin<<winner<<" won."<<endl; // output winner + statement + end line into file 
+
+recwin.close(); // close file 
+
+fillTbl(chart, MD,  diff,  brave );
+prntTbl(chart, MD);
+if (brave==0){cout<<"i know i called you a whimp for a reason...."<<endl;
+              cout<<"but wow..not even landing an X on the chart?"<<endl;}
+
+Rply=PlyAgn(NumRnds, WNY, WNN, Ntms); // Wanna Replay?
+}while(Rply==true);
+//Exit Program
+prntVctr(victors, NumRnds);
+
+cout<<"Bye now..."<<endl; 
+return 0;
+}
+
+bool PlyAgn (int NumRnds, int WNY, int WNN, int Ntms){
+    char again; //d for default 
+    bool Rtrn;
+    cout<<endl; 
+    cout<<"**************************************************"<<endl; 
+    cout<<"Play again? Y or N...Hey! that rhymed"<<endl;
+    cout<<"By the way...you have played "<<NumRnds<<" games so far."<<endl;
+    cout<<"Back to what I was saying"<<endl; 
+    
+    Rtrn=Valid(false, WNY, WNN, Ntms); 
+
+    
+return Rtrn;
+}
+
+bool Valid (bool ingame, int& WNY, int& WNN, int& Ntms){
+    char again; 
+    bool Rtrn; 
+      do{ //Input Validation for Re-Roll Choice
+        static int typo=0;
+                cout<<"Capitalization is irrelevant...but only press y or n..."<<endl;
+                cout<<"So far you've made "<<typo<<" typos"<<endl; 
+                cin>>again; // input choice for again 
+                if      ((again=='Y')||(again=='y')){ // if y or Y is pressed add one to number of rounds
+                    if (ingame==true){WNY++;Ntms++;} 
+                    Rtrn=true;} 
+                else if ((again=='N')||(again=='n')){
+                    if (ingame==true){WNN++;Ntms++;}
+                    Rtrn=false;} // if n or N is pressed add one to WNN and Ntms
+                else {
+                cout<<"typo...."<<endl; 
+                typo ++;} 
+                
+                if (typo==10){cout<<endl<<"pay attention butterfingers...I'll give u one more try..."<<endl;} 
+                if (typo>10){
+                    cout<<"I WARNED YOUUU!!!"<<endl; 
+                    exit(0);
+                }
+                
+            }while ((again!='Y')&&(again!='y')&&(again!='N')&&(again!='n'));
+        return Rtrn; 
+}
+void text (string name="Winner"){
+    cout<<name<<" was victorious!"<<endl;  
+}
+void text (int brave=0){
+    cout<<"with a bravery rating of: "<<brave<<endl; 
+}
+string RbMode (int arr[], int SIZE){
+    string Rtrn;
+    int hold; 
+    for (int i = 0; i < SIZE ; i++){
+        hold+=arr[i];
+    }
+    if (hold==9) {Rtrn="easy";}
+    if (hold==12){Rtrn="medium";}
+    if (hold==15){Rtrn="hard";}
+    return Rtrn; 
+}
+void fillTbl(char arr [][5],int MD, int diff, int brvscr ){
+    int BRV=5;
+     for (int mode=1; mode<=MD; mode++ ){
+         
+         for (int brave=1; brave<=BRV; brave++){      
+              if(arr[mode-1][brave-1] == arr[diff-1][brvscr-1]){arr [mode-1][brave-1]='X';}
+              if(arr[mode-1][brave-1] != arr[diff-1][brvscr-1]){arr [mode-1][brave-1]='*';}
+         }
+    }  
+}
+void prntTbl(char arr [][5],int MD){
+    int BRV=5;
+        cout<<"How did you do?"<<endl;
+        cout<<endl; 
+        cout<<"         Bravery Rating        "<<endl;
+    cout<<setw(31)<<"        |   1   2   3   4   5  "<<endl;
+    cout<<setw(31)<<setfill('-')<<""<<endl; 
+    for (int mode=0;mode<MD; mode++){
+        if (mode==0) cout<<"easy    |";
+        if (mode==1) cout<<"medium  |";
+        if (mode==2) cout<<"hard    |";
+    
+        
+        for (int brave=0; brave<BRV; brave++){
+            cout<<setw(4)<<setfill(' ')<<right<<arr[mode][brave];
+        }
+        cout<<endl; 
+    }
+}
+void prntVctr(vector <string> winners, int NumRnds){
+    cout<<"The winners were as follows: "<<endl; 
+for (int i=0; i<NumRnds; i++){
+    cout<<winners[i];
+    cout<<endl; 
+}
+cout<<endl; 
+}
+
+void prntRlls(vector <int> land, int turn){
+    
+int k=0; 
+int perLine=5;
+    for (int i=0;i<turn; i++){
+       
+       cout<<setw(2)<<setfill(' ')<<right<<land[i];
+       cout<<" ";
+       k++;
+       if (k==perLine){
+            cout<<endl; 
+            k-=perLine; 
+            }
+    }
+    cout<<endl; 
+}
+
+bool linSrch(vector <int> land,int turn, int& indx){
+    
+for (int i = 0; i < turn; i++)
+    if (land[i] == 1){
+        indx=i;
+        return true; 
+    }
+          
+return false;
+}
+void bubSort(vector <int>& land ,int turn){
+    cout<<"I'll use bubble sort.."<<endl; 
+    bool swap;
+    int redList=turn-1;
+    do{
+        swap=false;
+        for(int i=0;i<redList;i++){
+            if(land[i]>land[i+1]){
+                swap1(land[i],land[i+1]);
+                swap=true;
+            }
+        } 
+        redList--;
+    }while(swap);
+}
+void selSort(vector<int>& land,int turn){
+    cout<<"I'll use selection sort.."<<endl; 
+    for(int i=0;i<turn-1;i++){
+        int indx=i;
+        for(int j=i+1;j<turn;j++){
+            if(land[indx]>land[j]){
+                indx=j;
+            }
+        }
+        swap1(land[i],land[indx]);
+    }
+}
+void swap1(int &a,int &b){
+    int temp=a;
+    a=b;
+    b=temp;
+}
